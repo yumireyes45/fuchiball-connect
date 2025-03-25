@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
 import CustomButton from '@/components/ui/custom-button';
-import { User, LogOut, Edit2, Shield, CreditCard, Bell, HelpCircle, SoccerBall } from 'lucide-react';
+import { User, LogOut, Edit2, Shield, CreditCard, Bell, HelpCircle, Football } from 'lucide-react';
 import { toast } from 'sonner';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
 import { cn } from '@/lib/utils';
@@ -68,7 +67,7 @@ const Profile = () => {
                     Intermedio
                   </span>
                   <span className="ml-2 text-gray-500 text-sm flex items-center">
-                    <SoccerBall className="w-3 h-3 mr-1" />
+                    <Football className="w-3 h-3 mr-1" />
                     8 partidos jugados
                   </span>
                 </div>
