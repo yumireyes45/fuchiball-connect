@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
 import MatchCard, { Match } from '@/components/MatchCard/MatchCard';
-import { Search, MapPin, Calendar, Star, Filter, Football } from 'lucide-react';
+import { Search, MapPin, Calendar, Star, Filter, Layers } from 'lucide-react';
 import CustomButton from '@/components/ui/custom-button';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
 
@@ -71,7 +70,7 @@ const Home = () => {
   }, []);
 
   const filterOptions = [
-    { id: 'all', label: 'Todos', icon: <Football size={16} /> },
+    { id: 'all', label: 'Todos', icon: <Layers size={16} /> },
     { id: 'location', label: 'Cercanos', icon: <MapPin size={16} /> },
     { id: 'today', label: 'Hoy', icon: <Calendar size={16} /> },
     { id: 'level', label: 'Mi nivel', icon: <Star size={16} /> },
