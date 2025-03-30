@@ -8,6 +8,7 @@ import { AnimatePresence } from "framer-motion";
 import NotFound from "./pages/NotFound";
 
 // Import pages
+import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import LastMinute from "./pages/LastMinute";
@@ -26,7 +27,8 @@ const App = () => (
       <BrowserRouter>
         <AnimatePresence mode="wait">
           <Routes>
-            <Route path="/" element={<Auth />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/home" element={<Home />} />
             <Route path="/last-minute" element={<LastMinute />} />
             <Route path="/match/:id" element={<MatchDetail />} />
