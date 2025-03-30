@@ -7,6 +7,11 @@ import CustomButton from '@/components/ui/custom-button';
 const Index = () => {
   const navigate = useNavigate();
 
+  // Update to navigate to Auth instead of directly to Home or LastMinute
+  const handleNavigate = (destination: string) => {
+    navigate('/auth');
+  };
+
   return (
     <div className="min-h-screen overflow-hidden relative flex flex-col">
       {/* Background with overlay */}
@@ -81,7 +86,7 @@ const Index = () => {
               fullWidth
               icon={<ArrowRight />}
               iconPosition="right"
-              onClick={() => navigate('/home')}
+              onClick={() => handleNavigate('/home')}
               className="shadow-lg shadow-fuchiball-green/30"
             >
               Ver Partidos Disponibles
@@ -93,7 +98,7 @@ const Index = () => {
               fullWidth
               icon={<Zap className="text-black" />}
               iconPosition="right"
-              onClick={() => navigate('/last-minute')}
+              onClick={() => handleNavigate('/last-minute')}
               className="shadow-lg shadow-fuchiball-gold/30"
             >
               Último Minuto ⚡

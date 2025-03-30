@@ -1,120 +1,90 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    --fuchiball-green: #2A802A;
+    --fuchiball-gold: #FFC107;
+    --fuchiball-light-gold: #FFD54F;
+    --fuchiball-black: #1A1A1A;
+    --fuchiball-gray: #E0E0E0;
+
     --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
-
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
-
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
-
-    --primary: 138 57% 40%;
-    --primary-foreground: 0 0% 98%;
-
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
-
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-
-    --accent: 45 68% 52%;
-    --accent-foreground: 0 0% 10%;
-
-    --destructive: 0 84% 60%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 12 97% 59%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 138 57% 40%;
-
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 142.1 76.2% 36.3%;
     --radius: 0.75rem;
   }
 
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 142.1 70.6% 45.3%;
+    --primary-foreground: 144.9 80.4% 10%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 12 97% 59%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 142.4 71.8% 29.2%;
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Improve button touch targets */
-  button, a {
-    @apply transition-all duration-200;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@layer components {
-  .glass-card {
-    @apply bg-white/90 backdrop-blur-sm border border-white/20 shadow-lg;
-  }
-  
+@layer utilities {
   .premium-input {
-    @apply w-full px-4 py-3 rounded-xl bg-white/50 backdrop-blur-sm border border-border focus:border-fuchiball-green focus:ring-1 focus:ring-fuchiball-green focus:outline-none transition-all duration-200;
+    @apply w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchiball-green/30 focus:border-fuchiball-green transition-all;
   }
   
   .premium-button {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-xl font-medium transition-all duration-200 transform hover:translate-y-[-2px] active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply font-medium transition-all duration-300 rounded-xl flex items-center justify-center;
   }
   
   .premium-button-primary {
-    @apply premium-button bg-fuchiball-green text-white hover:bg-fuchiball-green/90 focus:ring-fuchiball-green/50;
+    @apply premium-button bg-fuchiball-green text-white hover:bg-fuchiball-green/90;
   }
   
   .premium-button-secondary {
-    @apply premium-button bg-secondary text-foreground hover:bg-secondary/80 focus:ring-secondary/50;
+    @apply premium-button bg-gray-100 text-gray-700 hover:bg-gray-200;
   }
   
   .premium-button-accent {
-    @apply premium-button bg-fuchiball-gold text-white hover:bg-fuchiball-gold/90 focus:ring-fuchiball-gold/50;
-  }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
-  }
-  
-  .page-container {
-    @apply max-w-screen-xl mx-auto px-4 sm:px-6 py-8 animate-fade-in;
-  }
-  
-  .page-title {
-    @apply text-3xl font-bold mb-8 text-fuchiball-black;
-  }
-
-  .navbar-blur {
-    @apply bg-white/80 backdrop-blur-lg border-b border-border/40 shadow-sm;
+    @apply premium-button bg-fuchiball-gold text-black hover:bg-fuchiball-gold/90;
   }
 }
 
-/* Smooth page transitions */
-.page-enter {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-.page-enter-active {
-  opacity: 1;
-  transform: translateX(0);
-  transition: opacity 300ms, transform 300ms;
-}
-
-.page-exit {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.page-exit-active {
-  opacity: 0;
-  transform: translateX(-100%);
-  transition: opacity 300ms, transform 300ms;
-}
