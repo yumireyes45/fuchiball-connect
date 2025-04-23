@@ -1,23 +1,118 @@
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import CustomButton from '@/components/ui/custom-button';
 import { Check, Calendar, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
+import { supabase } from '@/lib/supabaseClient';
+import FootballLoader from '@/components/ui/FootballLoader';
+
+interface MatchParticipant {
+  id: string;
+  match_id: string;
+  user_id: string;
+  code: string;
+  joined_at: string;
+  status: 'confirmed';
+  match: {
+    title: string;
+    location: string;
+    date: string;
+    time: string;
+    level: string;
+  };
+}
 
 const Confirmation = () => {
   const navigate = useNavigate();
-  
-  // Generate a random confirmation code
-  const confirmationCode = `FBC-${Math.floor(1000 + Math.random() * 9000)}`;
+  const location = useLocation();
+  const [loading, setLoading] = useState(true);
+  const [participation, setParticipation] = useState<MatchParticipant | null>(null);
   
   useEffect(() => {
-    // Scroll to top
-    window.scrollTo(0, 0);
-  }, []);
-  
+    const createParticipation = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast.error('No has iniciado sesión');
+          navigate('/login');
+          return;
+        }
+
+        const matchId = location.state?.matchId;
+        if (!matchId) {
+          toast.error('No se encontró el partido');
+          navigate('/home');
+          return;
+        }
+
+        // Start a transaction
+        const { data: matchCheck, error: matchError } = await supabase
+          .from('matches')
+          .select('available_spots')
+          .eq('id', matchId)
+          .single();
+
+        if (matchError || !matchCheck || matchCheck.available_spots < 1) {
+          throw new Error('No hay cupos disponibles');
+        }
+
+        // Generate unique code
+        const code = `FBC-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        // Create participation record
+        const { data: participationData, error: participationError } = await supabase
+          .from('match_participants')
+          .insert({
+            match_id: matchId,
+            user_id: session.user.id,
+            code,
+            status: 'confirmed',
+            joined_at: new Date().toISOString()
+          })
+          .select(`
+            *,
+            match:matches (
+              title,
+              location,
+              date,
+              time,
+              level
+            )
+          `)
+          .single();
+
+        if (participationError) {
+          throw new Error('Error al crear la participación');
+        }
+
+        // Decrement available spots using RPC
+        const { error: decrementError } = await supabase
+          .rpc('decrement_available_spots', { match_id: matchId });
+
+        if (decrementError) {
+          throw new Error('Error al actualizar cupos');
+        }
+
+        setParticipation(participationData);
+        toast.success('¡Inscripción exitosa!');
+
+      } catch (error: any) {
+        console.error('Error:', error);
+        toast.error(error.message || 'Error al procesar tu inscripción');
+        navigate('/home');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    createParticipation();
+  }, [navigate, location.state]);
+
+  if (loading) return <FootballLoader />;
+  if (!participation) return null;
+
   return (
     <AnimatedRoute>
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -44,7 +139,7 @@ const Confirmation = () => {
             
             <div className="bg-white border-2 border-dashed border-fuchiball-green rounded-xl p-6 mb-8 max-w-xs mx-auto">
               <div className="text-4xl font-bold text-center text-fuchiball-green mb-2">
-                {confirmationCode}
+                {participation.code}
               </div>
               <div className="text-sm text-gray-500 text-center">
                 Código de confirmación
@@ -57,22 +152,27 @@ const Confirmation = () => {
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Partido</span>
-                  <span className="font-medium">Pichanga en La Bombonera</span>
+                  <span className="font-medium">{participation.match.title}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Fecha</span>
-                  <span className="font-medium">Hoy, 7:00 PM</span>
+                  <span className="font-medium">{participation.match.date}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Hora</span>
+                  <span className="font-medium">{participation.match.time}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Lugar</span>
-                  <span className="font-medium">La Molina, Lima</span>
+                  <span className="font-medium">{participation.match.location}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Nivel</span>
-                  <span className="font-medium">Intermedio</span>
+                  <span className="font-medium">{participation.match.level}</span>
                 </div>
               </div>
             </div>

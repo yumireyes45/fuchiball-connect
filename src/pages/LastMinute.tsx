@@ -1,66 +1,60 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Clock } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabaseClient';
 import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
 import MatchCard, { Match } from '@/components/MatchCard/MatchCard';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
-import { Clock } from 'lucide-react';
+import FootballLoader from '@/components/ui/FootballLoader';
+import { formatInTimeZone } from 'date-fns-tz';
 
-// Mock data for last minute matches
-const mockLastMinuteMatches: Match[] = [
-  {
-    id: '1lm',
-    title: 'Partido Relámpago',
-    location: 'Surquillo, Lima',
-    time: '9:30 PM',
-    date: 'Hoy',
-    availableSpots: 2,
-    totalSpots: 10,
-    price: 40,
-    level: 'Intermedio',
-    isLastMinute: true,
-    discountPercentage: 25
-  },
-  {
-    id: '2lm',
-    title: 'Pichanga Nocturna',
-    location: 'San Isidro, Lima',
-    time: '10:00 PM',
-    date: 'Hoy',
-    availableSpots: 3,
-    totalSpots: 12,
-    price: 50,
-    level: 'Avanzado',
-    isLastMinute: true,
-    discountPercentage: 30
-  },
-  {
-    id: '3lm',
-    title: 'Fútbol Express',
-    location: 'Jesús María, Lima',
-    time: '8:30 PM',
-    date: 'Hoy',
-    availableSpots: 1,
-    totalSpots: 8,
-    price: 35,
-    level: 'Básico',
-    isLastMinute: true,
-    discountPercentage: 20
-  }
-];
+
+const TIMEZONE = 'America/Lima';
+
 
 const LastMinute = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setMatches(mockLastMinuteMatches);
-      setLoading(false);
-    }, 1000);
+    
+    const fetchLastMinuteMatches = async () => {
+      try {
+        // Get current date and time in Peru timezone
+        const now = new Date();
+        const currentDateTime = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd'T'HH:mm");
+
+        const { data, error } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('status', 'active')
+          .eq('is_last_minute', true)
+          .gt('available_spots', 0)
+          // Filter out past matches using date and time
+          .gt('date', currentDateTime.split('T')[0]) // Future dates
+          .or(`date.eq.${currentDateTime.split('T')[0]},time.gte.${currentDateTime.split('T')[1]}`) // Today's matches that haven't started
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+
+        if (error) throw error;
+
+        setMatches(data || []);
+      } catch (error: any) {
+        toast.error('Error al cargar los partidos', { duration: 2000 });
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLastMinuteMatches();
   }, []);
+
+  if (loading) {
+    return <FootballLoader />;
+  }
 
   return (
     <AnimatedRoute>

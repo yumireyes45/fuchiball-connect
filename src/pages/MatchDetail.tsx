@@ -18,33 +18,9 @@ import CustomButton from '@/components/ui/custom-button';
 import { toast } from 'sonner';
 import { Match } from '@/components/MatchCard/MatchCard';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
+import { supabase } from '@/lib/supabaseClient';
 
-// Mock match data
-const mockMatchDetails: Record<string, Match> = {
-  '1': {
-    id: '1',
-    title: 'Pichanga en La Bombonera',
-    location: 'La Molina, Lima',
-    time: '7:00 PM',
-    date: 'Hoy',
-    availableSpots: 3,
-    totalSpots: 10,
-    price: 35,
-    level: 'Intermedio'
-  },
-  '2': {
-    id: '2',
-    title: 'Partido Amistoso',
-    location: 'Miraflores, Lima',
-    time: '8:30 PM',
-    date: 'Hoy',
-    availableSpots: 2,
-    totalSpots: 12,
-    price: 40,
-    level: 'Avanzado'
-  },
-  // Add more match details as needed
-};
+
 
 const MatchDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,15 +29,39 @@ const MatchDetail = () => {
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<'yape' | 'plin' | 'card' | null>(null);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    // Simulate API call to get match details
-    setTimeout(() => {
-      if (id && mockMatchDetails[id]) {
-        setMatch(mockMatchDetails[id]);
+    const fetchMatchDetails = async () => {
+      if (!id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data) {
+          setMatch({
+            ...data,
+            availableSpots: data.available_spots,
+            totalSpots: data.total_spots,
+            isLastMinute: data.is_last_minute,
+            discountPercentage: data.discount_percentage,
+          });
+        }
+      } catch (error: any) {
+        toast.error('Error al cargar el partido', { duration: 2000 });
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 1000);
+    };
+
+    fetchMatchDetails();
   }, [id]);
 
   const handleBack = () => {
@@ -72,20 +72,56 @@ const MatchDetail = () => {
     setShowPaymentOptions(true);
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!paymentMethod) {
-      toast.error('Por favor selecciona un método de pago');
+      toast.error('Por favor selecciona un método de pago', { duration: 1000 });
       return;
     }
-
-    // Simulate payment processing
-    toast.loading('Procesando pago...');
-    
-    setTimeout(() => {
+  
+    if (!match || isProcessing) {
+      return;
+    }
+  
+    setIsProcessing(true);
+  
+    try {
+      // Check session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        toast.error('No has iniciado sesión');
+        navigate('/auth');
+        return;
+      }
+  
+      // Check available spots
+      if (match.available_spots < 1) {
+        toast.error('Ya no hay cupos disponibles');
+        return;
+      }
+  
+      // Show loading toast
+      toast.loading('Procesando pago...');
+  
+      // Simulate payment processing (replace with real payment integration)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+  
+      // Navigate to confirmation with match ID
+      navigate('/confirmation', {
+        state: {
+          matchId: match.id,
+          paymentMethod
+        },
+        replace: true
+      });
+  
+    } catch (error: any) {
+      toast.error('Error al procesar el pago');
+      console.error('Payment error:', error);
+    } finally {
+      setIsProcessing(false);
       toast.dismiss();
-      toast.success('Pago completado con éxito');
-      navigate('/confirmation');
-    }, 2000);
+    }
   };
 
   if (loading) {
@@ -127,7 +163,7 @@ const MatchDetail = () => {
             
             <button 
               className="absolute top-6 right-4 bg-white/20 backdrop-blur-sm p-2 rounded-full"
-              onClick={() => toast.info('Compartido con éxito')}
+              onClick={() => toast.info('Compartido con éxito', { duration: 1000 })}
             >
               <Share2 className="w-5 h-5" />
             </button>
@@ -177,7 +213,7 @@ const MatchDetail = () => {
               <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
                 <Users className="w-6 h-6 text-fuchiball-green mb-2" />
                 <span className="text-sm text-gray-500">Cupos</span>
-                <span className="font-medium">{match.availableSpots} disponibles</span>
+                <span className="font-medium">{match.available_spots} disponibles</span>
               </div>
               
               <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
@@ -190,32 +226,48 @@ const MatchDetail = () => {
             {/* Map placeholder */}
             <div className="mb-6 rounded-xl overflow-hidden h-48 bg-gray-200 flex items-center justify-center">
               <MapPin className="w-8 h-8 text-gray-400" />
-              <span className="ml-2 text-gray-500">Mapa de ubicación</span>
+              <span className="ml-2 text-gray-500">Mapa de ubicación bloqueada</span>
             </div>
             
             {/* Price and buttons */}
             <div className="mb-4">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <span className="text-gray-500 text-sm">Precio por persona</span>
+            {/* Cambiar flex por flex-col en mobile y row en desktop */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+              <div className="w-full sm:w-auto align-center text-center sm:text-left">
+                <span className="text-gray-500 text-sm">Precio por persona</span>
+                {match.is_last_minute && match.discount_percentage ? (
+                  <div>
+                    <span className="text-gray-500 line-through text-lg mr-2">
+                      S/ {match.price}
+                    </span>
+                    <span className="font-bold text-3xl text-fuchiball-green mr-3">
+                      S/ {(match.price - (match.price * (match.discount_percentage / 100))).toFixed(0)}
+                    </span>
+                    <span className="text-fuchiball-gold text-base font-medium block sm:inline">
+                      {match.discount_percentage}% de descuento
+                    </span>
+                  </div>
+                ) : (
                   <div className="font-bold text-2xl text-fuchiball-black">
                     S/ {match.price}
                   </div>
-                </div>
-                
-                <CustomButton 
-                  onClick={handleJoin}
-                  size="lg"
-                >
-                  Unirme y pagar
-                </CustomButton>
+                )}
               </div>
+              
+              <CustomButton 
+                onClick={handleJoin}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                Unirme y pagar
+              </CustomButton>
+            </div>
               
               {/* Description */}
               <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                <h3 className="font-medium mb-2">Descripción del partido</h3>
-                <p className="text-gray-600 text-sm">
-                  Partido amistoso con buen ambiente. La cancha cuenta con estacionamiento, vestuarios y duchas. Se juega en formato 7 vs 7.
+                <h3 className="font-semibold mb-2">Descripción del partido</h3>
+                <p className="text-gray-600 text-base">
+                {match.description}
                 </p>
               </div>
               
@@ -223,17 +275,17 @@ const MatchDetail = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-gray-600">Duración</span>
-                  <span className="font-medium">90 minutos</span>
+                  <span className="font-medium">{match.duration} minutos</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-gray-600">Formato</span>
-                  <span className="font-medium">7 vs 7</span>
+                  <span className="font-medium">{match.format} vs {match.format}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-gray-600">Incluye</span>
-                  <span className="font-medium">Cancha, árbitro, petos</span>
+                  <span className="font-medium">{match.includes}</span>
                 </div>
               </div>
             </div>
@@ -345,8 +397,9 @@ const MatchDetail = () => {
                 fullWidth
                 size="lg"
                 onClick={handlePay}
+                disabled={isProcessing}
               >
-                Pagar ahora
+                {isProcessing ? 'Procesando...' : 'Pagar ahora'}
               </CustomButton>
             </motion.div>
           </div>

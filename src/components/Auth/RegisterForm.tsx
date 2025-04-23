@@ -1,15 +1,14 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, Smartphone } from 'lucide-react';
 import CustomButton from '../ui/custom-button';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabaseClient';
 
 const RegisterForm = () => {
   const [registerMethod, setRegisterMethod] = useState<'email' | 'phone'>('email');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -17,100 +16,90 @@ const RegisterForm = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (authError || !authData?.user) {
+      toast.error('Error al registrar: ' + authError?.message);
       setLoading(false);
-      toast.success('Cuenta creada correctamente');
-      navigate('/home');
-    }, 1500);
+      return;
+    }
+
+    const { user } = authData;
+
+    const { error: insertError } = await supabase.from('profile').insert({
+      id: user.id,
+      full_name: name,
+    });
+
+    if (insertError) {
+      toast.error('Error al guardar perfil: ' + insertError.message);
+      setLoading(false);
+      return;
+    }
+    
+
+    toast.success('Cuenta creada correctamente');
+    setLoading(false);
+    navigate('/home');
   };
 
-  const handleGoogleRegister = () => {
+  const handleGoogleRegister = async () => {
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
+    });
+  
+    if (error) {
+      toast.error('Error al usar Google: ' + error.message);
       setLoading(false);
-      toast.success('Cuenta creada con Google');
-      navigate('/home');
-    }, 1500);
+    }
   };
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="flex justify-center mb-4">
-        <div className="bg-white rounded-full p-2 shadow-md border border-gray-100">
-          <div className="flex space-x-2">
-            <button
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                registerMethod === 'email'
-                  ? 'bg-fuchiball-green text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-              onClick={() => setRegisterMethod('email')}
-            >
-              Email
-            </button>
-            <button
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                registerMethod === 'phone'
-                  ? 'bg-fuchiball-green text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-              onClick={() => setRegisterMethod('phone')}
-            >
-              Teléfono
-            </button>
-          </div>
-        </div>
-      </div>
 
       <form onSubmit={handleRegister} className="space-y-4">
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+      <div className="relative">
+        {/*<User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />*/}
+        <input
+          type="text"
+          placeholder="Nombre completo"
+          className="premium-input pl-12"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+      </div>
+
+      <div className="relative">
+          {/*<Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />*/}
           <input
-            type="text"
-            placeholder="Nombre completo"
-            className="premium-input pl-10"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            type="email"
+            placeholder="Email"
+            className="premium-input pl-12"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
 
-        {registerMethod === 'email' ? (
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="email"
-              placeholder="Email"
-              className="premium-input pl-10"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-        ) : (
-          <div className="relative">
-            <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="tel"
-              placeholder="Número de teléfono"
-              className="premium-input pl-10"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-            />
-          </div>
-        )}
-        
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          {/*<Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />*/}
           <input
             type="password"
             placeholder="Contraseña"
-            className="premium-input pl-10"
+            className="premium-input pl-12"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -156,3 +145,4 @@ const RegisterForm = () => {
 };
 
 export default RegisterForm;
+

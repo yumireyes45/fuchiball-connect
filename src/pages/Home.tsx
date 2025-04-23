@@ -6,54 +6,13 @@ import MatchCard, { Match } from '@/components/MatchCard/MatchCard';
 import { Search, MapPin, Calendar, Star, Filter, Layers } from 'lucide-react';
 import CustomButton from '@/components/ui/custom-button';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
+import { supabase } from '@/lib/supabaseClient';
+import { toast } from 'sonner';
+import FootballLoader from '@/components/ui/FootballLoader';
+import { formatInTimeZone } from 'date-fns-tz';
 
-// Mock data for matches
-const mockMatches: Match[] = [
-  {
-    id: '1',
-    title: 'Pichanga en La Bombonera',
-    location: 'La Molina, Lima',
-    time: '7:00 PM',
-    date: 'Hoy',
-    availableSpots: 3,
-    totalSpots: 10,
-    price: 35,
-    level: 'Intermedio'
-  },
-  {
-    id: '2',
-    title: 'Partido Amistoso',
-    location: 'Miraflores, Lima',
-    time: '8:30 PM',
-    date: 'Hoy',
-    availableSpots: 2,
-    totalSpots: 12,
-    price: 40,
-    level: 'Avanzado'
-  },
-  {
-    id: '3',
-    title: 'Pichanga Familiar',
-    location: 'San Borja, Lima',
-    time: '6:00 PM',
-    date: 'Mañana',
-    availableSpots: 5,
-    totalSpots: 14,
-    price: 30,
-    level: 'Básico'
-  },
-  {
-    id: '4',
-    title: 'Partido Rápido',
-    location: 'Surco, Lima',
-    time: '9:00 PM',
-    date: 'Mañana',
-    availableSpots: 1,
-    totalSpots: 10,
-    price: 45,
-    level: 'Intermedio'
-  }
-];
+
+const TIMEZONE = 'America/Lima'; // Define the timezone for Peru
 
 const Home = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -62,12 +21,44 @@ const Home = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setMatches(mockMatches);
-      setLoading(false);
-    }, 1000);
+
+    const fetchMatches = async () => {
+      try {
+        // Get current date and time in Peru timezone
+        const now = new Date();
+        const currentDate = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd");
+        const currentTime = formatInTimeZone(now, TIMEZONE, "HH:mm");
+    
+        const { data, error } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('status', 'active')
+          .or(
+            `and(date.gt.${currentDate}),` + // Future dates
+            `and(date.eq.${currentDate},time.gte.${currentTime})` // Today's matches that haven't started
+          )
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+    
+        if (error) throw error;
+    
+        if (data) {
+          setMatches(data);
+        }
+      } catch (error: any) {
+        toast.error('Error al cargar los partidos', { duration: 2000 });
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMatches();
   }, []);
+
+  if (loading) {
+    return <FootballLoader />;
+  }
 
   const filterOptions = [
     { id: 'all', label: 'Todos', icon: <Layers size={16} /> },
@@ -101,14 +92,15 @@ const Home = () => {
           
           {/* Search Bar */}
           <div className="relative mb-6">
+          {/*<Search className="absolute item-left left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />*/}
             <input
               type="text"
+              className="premium-input py-4"
               placeholder="Buscar partido o ubicación..."
-              className="premium-input pl-12 py-4"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            
           </div>
           
           {/* Filter Pills */}
@@ -143,15 +135,8 @@ const Home = () => {
               transition={{ duration: 0.5 }}
               className="space-y-4"
             >
-              {matches.map((match, index) => (
-                <motion.div
-                  key={match.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.3 }}
-                >
-                  <MatchCard match={match} />
-                </motion.div>
+              {matches.map(match => (
+                <MatchCard key={match.id} match={match} />
               ))}
             </motion.div>
           )}

@@ -16,6 +16,11 @@ import MatchDetail from "./pages/MatchDetail";
 import Confirmation from "./pages/Confirmation";
 import MyMatches from "./pages/MyMatches";
 import Profile from "./pages/Profile";
+import AuthCallback from '@/pages/AuthCallback';
+import CreateMatch from '@/pages/CreateMatch';
+import AdminDashboard from '@/pages/AdminDashboard'; 
+import EditMatch from '@/pages/EditMatch'; // Ajusta si está en otra carpeta
+
 
 const queryClient = new QueryClient();
 
@@ -35,6 +40,10 @@ const App = () => (
             <Route path="/confirmation" element={<Confirmation />} />
             <Route path="/my-matches" element={<MyMatches />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin/crear-partido" element={<CreateMatch />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/editar-partido/:id" element={<EditMatch />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AnimatePresence>

@@ -9,7 +9,7 @@ const Index = () => {
 
   // Update to navigate to Auth instead of directly to Home or LastMinute
   const handleNavigate = (destination: string) => {
-    navigate('/auth');
+    navigate(destination);
   };
 
   return (
@@ -18,7 +18,7 @@ const Index = () => {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-fuchiball-green/90 z-10" />
         <div 
-          className="absolute inset-0 bg-black z-0 bg-[url('https://images.unsplash.com/photo-1518604666860-9ed391f76460?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')] 
+          className="absolute inset-0 bg-black z-0 bg-[url('https://ytsvrhcubfdotvaomypr.supabase.co/storage/v1/object/sign/profiles/WhatsApp%20Image%202025-03-30%20at%206.32.47%20PM.jpeg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJwcm9maWxlcy9XaGF0c0FwcCBJbWFnZSAyMDI1LTAzLTMwIGF0IDYuMzIuNDcgUE0uanBlZyIsImlhdCI6MTc0MzM3ODQ0NSwiZXhwIjoxNzc0OTE0NDQ1fQ.hcwOBIw0njYqr5mZdAyY3iXu9cJEPtFacGv6sDxr_3s')] 
           bg-cover bg-center"
         />
       </div>
@@ -33,8 +33,8 @@ const Index = () => {
           className="text-center"
         >
           <h1 className="text-3xl font-bold text-white">
-            <span className="text-fuchiball-gold">Fuchi</span>
-            <span className="text-white">ball</span>
+            <span className="text-fuchiball-gold">Pasa</span>
+            <span className="text-white">LaVoz</span>
           </h1>
         </motion.div>
 
@@ -51,7 +51,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            ¿No tienes con quién jugar fútbol?
+            ¿No tienes con quién jugar pichangas?
           </motion.h2>
           
           <motion.h2 
@@ -101,7 +101,7 @@ const Index = () => {
               onClick={() => handleNavigate('/last-minute')}
               className="shadow-lg shadow-fuchiball-gold/30"
             >
-              Último Minuto ⚡
+              Último Minuto
             </CustomButton>
           </motion.div>
         </motion.div>
