@@ -80,16 +80,14 @@ const MatchCard = ({ match, className }: MatchCardProps) => {
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <h3 className="font-bold text-lg text-fuchiball-black">{title}</h3>
-            <div className={cn('px-3 py-1 rounded-full text-xs font-medium', getLevelColor())}>
-              {level}
+            <div className={cn('px-3 py-1 rounded-full text-xs font-medium flex items-center ', getLevelColor())}>
+            <MapPin className="w-4 h-4 mr-1 flex-shrink-0 " />
+              <span className="truncate">{location}</span>
             </div>
           </div>
           
           <div className="space-y-3 mb-4">
-            <div className="flex items-center text-sm text-gray-600">
-              <MapPin className="w-4 h-4 mr-2 flex-shrink-0 text-fuchiball-green" />
-              <span className="truncate">{location}</span>
-            </div>
+
             
             <div className="flex items-center text-sm text-gray-600">
               <Clock className="w-4 h-4 mr-2 flex-shrink-0 text-fuchiball-green" />

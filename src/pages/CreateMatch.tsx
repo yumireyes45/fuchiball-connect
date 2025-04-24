@@ -6,6 +6,7 @@ import CustomButton from '@/components/ui/custom-button';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
+import { ADMIN_EMAILS } from '@/components/constants/admins';
 
 type MatchFormData = {
   title: string;
@@ -58,7 +59,7 @@ const CreateMatch = () => {
         return;
       }
 
-      if (session.user.email !== 'yumireyes45@gmail.com') {
+      if (!ADMIN_EMAILS.includes(session.user.email || '')) {
         toast.error('No tienes permisos de administrador', { duration: 2000 });
         navigate('/auth');
         return;

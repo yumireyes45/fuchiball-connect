@@ -30,39 +30,52 @@ const MatchDetail = () => {
   const [paymentMethod, setPaymentMethod] = useState<'yape' | 'plin' | 'card' | null>(null);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAlreadyJoined, setIsAlreadyJoined] = useState(false);
 
   useEffect(() => {
     const fetchMatchDetails = async () => {
-      if (!id) return;
-
       try {
+        if (!id) return;
+  
         const { data, error } = await supabase
           .from('matches')
           .select('*')
           .eq('id', id)
           .single();
-
+  
         if (error) throw error;
-        
-        if (data) {
-          setMatch({
-            ...data,
-            availableSpots: data.available_spots,
-            totalSpots: data.total_spots,
-            isLastMinute: data.is_last_minute,
-            discountPercentage: data.discount_percentage,
-          });
-        }
-      } catch (error: any) {
-        toast.error('Error al cargar el partido', { duration: 2000 });
-        console.error('Error:', error);
-      } finally {
+  
+        setMatch(data);
         setLoading(false);
+      } catch (error) {
+        console.error('Error fetching match:', error);
+        toast.error('Error al cargar los detalles del partido');
+        navigate('/home');
       }
     };
-
+  
+    const checkParticipation = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session && id) {
+          const { data: participation } = await supabase
+            .from('match_participants')
+            .select('*')
+            .eq('match_id', id)
+            .eq('user_id', session.user.id)
+            .single();
+  
+          setIsAlreadyJoined(!!participation);
+        }
+      } catch (error) {
+        console.error('Error checking participation:', error);
+      }
+    };
+  
     fetchMatchDetails();
-  }, [id]);
+    checkParticipation();
+  }, [id, navigate]);
 
   const handleBack = () => {
     navigate(-1);
@@ -255,12 +268,17 @@ const MatchDetail = () => {
                 )}
               </div>
               
-              <CustomButton 
+                <CustomButton 
                 onClick={handleJoin}
                 size="lg"
                 className="w-full sm:w-auto"
+                disabled={isAlreadyJoined || match.available_spots < 1}
               >
-                Unirme y pagar
+                {isAlreadyJoined 
+                  ? 'Ya estás inscrito en esta pichanga' 
+                  : match.available_spots < 1 
+                    ? 'No hay cupos' 
+                    : 'Unirme y pagar'}
               </CustomButton>
             </div>
               

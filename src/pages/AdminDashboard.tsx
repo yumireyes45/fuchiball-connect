@@ -7,6 +7,7 @@ import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
 import CustomButton from '@/components/ui/custom-button';
 import { Match } from '@/components/MatchCard/MatchCard';
+import { ADMIN_EMAILS } from '@/components/constants/admins';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const AdminDashboard = () => {
         return;
       }
 
-      if (session.user.email !== 'yumireyes45@gmail.com') {
+      if (!ADMIN_EMAILS.includes(session.user.email || '')) {
         toast.error('No tienes permisos de administrador', { duration: 2000 });
         navigate('/auth');
         return;

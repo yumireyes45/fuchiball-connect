@@ -4,6 +4,7 @@ import { Mail, Lock, ArrowRight, Smartphone } from 'lucide-react';
 import CustomButton from '../ui/custom-button';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
+import { getSiteUrl } from '../utils/url';
 
 const LoginForm = () => {
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
@@ -36,22 +37,20 @@ const LoginForm = () => {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    const redirectTo = `${window.location.origin}/auth/callback`;
+  
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        }
-      }
+      options: { redirectTo, queryParams: { access_type: 'offline', prompt: 'consent' } }
     });
   
     if (error) {
-      toast.error('Error al iniciar con Google: ' + error.message);
+      toast.error('Error iniciando con Google: ' + error.message);
       setLoading(false);
     }
   };
+  
+  
 
   return (
     <div className="w-full max-w-md mx-auto">

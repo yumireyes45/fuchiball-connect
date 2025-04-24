@@ -60,11 +60,28 @@ const Home = () => {
     return <FootballLoader />;
   }
 
+  const getFilteredMatches = () => {
+    const now = new Date();
+    const currentDate = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd");
+    
+    // Primero filtramos por búsqueda
+    let filtered = matches.filter(match =>
+      match.title.toLowerCase().includes(searchValue.toLowerCase()) ||
+      match.location.toLowerCase().includes(searchValue.toLowerCase())
+    );
+
+    // Luego aplicamos el filtro de fecha si está seleccionado
+    if (activeFilter === 'today') {
+      filtered = filtered.filter(match => match.date === currentDate);
+    }
+    // Si el filtro es 'all' o null, mostramos todos los partidos
+
+    return filtered;
+  };
+
   const filterOptions = [
     { id: 'all', label: 'Todos', icon: <Layers size={16} /> },
-    { id: 'location', label: 'Cercanos', icon: <MapPin size={16} /> },
     { id: 'today', label: 'Hoy', icon: <Calendar size={16} /> },
-    { id: 'level', label: 'Mi nivel', icon: <Star size={16} /> },
   ];
 
   const handleFilterClick = (filterId: string) => {
@@ -79,15 +96,8 @@ const Home = () => {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl font-bold text-fuchiball-black">Partidos Disponibles</h1>
-              <p className="text-gray-500">Encuentra tu próximo partido</p>
+              <p className="text-gray-500">Encuentra tu próxima pichanga...</p>
             </div>
-            <CustomButton 
-              variant="outline"
-              size="sm"
-              icon={<Filter size={16} />}
-            >
-              Filtros
-            </CustomButton>
           </div>
           
           {/* Search Bar */}
@@ -135,9 +145,19 @@ const Home = () => {
               transition={{ duration: 0.5 }}
               className="space-y-4"
             >
-              {matches.map(match => (
+              {getFilteredMatches().map(match => (
                 <MatchCard key={match.id} match={match} />
               ))}
+              
+              {getFilteredMatches().length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    {activeFilter === 'today' 
+                      ? 'No hay partidos programados para hoy' 
+                      : 'No se encontraron partidos'}
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
         </div>

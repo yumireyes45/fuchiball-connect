@@ -24,22 +24,24 @@ const LastMinute = () => {
       try {
         // Get current date and time in Peru timezone
         const now = new Date();
-        const currentDateTime = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd'T'HH:mm");
-
+        const currentDate = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd");
+        const currentTime = formatInTimeZone(now, TIMEZONE, "HH:mm");
+    
         const { data, error } = await supabase
           .from('matches')
           .select('*')
           .eq('status', 'active')
           .eq('is_last_minute', true)
           .gt('available_spots', 0)
-          // Filter out past matches using date and time
-          .gt('date', currentDateTime.split('T')[0]) // Future dates
-          .or(`date.eq.${currentDateTime.split('T')[0]},time.gte.${currentDateTime.split('T')[1]}`) // Today's matches that haven't started
+          .or(
+            `and(date.gt.${currentDate}),` + // Future dates
+            `and(date.eq.${currentDate},time.gte.${currentTime})` // Today's matches that haven't started
+          )
           .order('date', { ascending: true })
           .order('time', { ascending: true });
-
+    
         if (error) throw error;
-
+    
         setMatches(data || []);
       } catch (error: any) {
         toast.error('Error al cargar los partidos', { duration: 2000 });

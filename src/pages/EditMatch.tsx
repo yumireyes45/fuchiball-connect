@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
 import { Match } from '@/components/MatchCard/MatchCard';
+import { ADMIN_EMAILS } from '@/components/constants/admins';
+
 
 type EditMatchFormData = Omit<Match, 'id' | 'created_at' | 'created_by' | 'available_spots'> & {
   google_map_url?: string;
@@ -46,7 +48,7 @@ const EditMatch = () => {
         return;
       }
 
-      if (session.user.email !== 'yumireyes45@gmail.com') {
+      if (!ADMIN_EMAILS.includes(session.user.email || '')) {
         toast.error('No tienes permisos de administrador', { duration: 2000 });
         navigate('/auth');
         return;

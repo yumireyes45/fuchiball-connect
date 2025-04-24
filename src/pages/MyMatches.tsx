@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
-import { Calendar, Search } from 'lucide-react';
+import { Calendar, MapIcon, MapPin, Search } from 'lucide-react';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
 import { cn } from '@/lib/utils';
 import FootballLoader from '@/components/ui/FootballLoader';
@@ -28,6 +28,7 @@ interface MyMatch {
     time: string;
     level: string;
     price: number;
+    google_map_url: string; // Añadir esta propiedad
   };
 }
 
@@ -67,7 +68,8 @@ const MyMatches = () => {
             date,
             time,
             level,
-            price
+            price,
+            google_map_url
           )
         `)
         .eq('user_id', session.user.id)
@@ -105,62 +107,90 @@ const MyMatches = () => {
 
 
   // Add this function after the existing imports
-const updateMatchStatus = async (match: MyMatch) => {
-  const now = new Date();
-  const matchDateTime = `${match.matches.date}T${match.matches.time}`;
-  const currentTimePeru = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd'T'HH:mm");
+  const updateMatchStatus = async (match: MyMatch) => {
+    if (match.status !== 'confirmed') return false;
   
-  // If match is in the past and still confirmed, update to finished
-  if (matchDateTime < currentTimePeru && match.status === 'confirmed') {
-    const { error } = await supabase
-      .from('match_participants')
-      .update({ 
-        status: 'finished',
-        finished_at: new Date().toISOString()
-      })
-      .eq('id', match.id);
-
-    if (error) {
-      console.error('Error updating match status:', error);
-    }
-    return true;
-  }
-  return false;
-};
-
-  const handleCancelMatch = async (matchId: string) => {
-    try {
-      // Update participation status
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !session) {
-        toast.error('No has iniciado sesión');
-        return;
-      }
-
-      const { error: updateError } = await supabase
+    const now = new Date();
+    const matchDateTime = `${match.matches.date}T${match.matches.time}`;
+    const currentTimePeru = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd'T'HH:mm");
+    
+    if (matchDateTime < currentTimePeru) {
+      const { error } = await supabase
         .from('match_participants')
         .update({ 
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString()
+          status: 'finished',
+          finished_at: new Date().toISOString()
         })
-        .eq('match_id', matchId)
-        .eq('user_id', session.user.id);
-
-      if (updateError) throw updateError;
-
-      // Increment available spots in match
-      const { error: spotError } = await supabase
-        .rpc('increment_available_spots', { match_id: matchId });
-
-      if (spotError) throw spotError;
-
-      toast.success('Partido cancelado exitosamente');
-      fetchUserMatches(); // Refresh list
-    } catch (error) {
-      toast.error('Error al cancelar el partido');
+        .eq('id', match.id)
+        .eq('status', 'confirmed');
+  
+      if (error) {
+        console.error('Error updating match status:', error);
+        return false;
+      }
+      return true;
     }
+    return false;
   };
+
+const handleCancelMatch = async (matchId: string) => {
+  try {
+    // Check session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      toast.error('No has iniciado sesión');
+      return;
+    }
+
+    // Start transaction
+    const { data: participant, error: participantError } = await supabase
+      .from('match_participants')
+      .select('*')
+      .eq('match_id', matchId)
+      .eq('user_id', session.user.id)
+      .eq('status', 'confirmed')
+      .single();
+
+    if (participantError || !participant) {
+      toast.error('No se encontró tu participación');
+      return;
+    }
+
+    // Update participation status
+    const { error: updateError } = await supabase
+      .from('match_participants')
+      .update({ 
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString()
+      })
+      .eq('id', participant.id)
+      .eq('status', 'confirmed');
+
+    if (updateError) throw updateError;
+
+    // Increment available spots
+    const { error: spotError } = await supabase
+      .rpc('increment_available_spots', { match_id: matchId });
+
+    if (spotError) throw spotError;
+
+    toast.success('Participación cancelada exitosamente');
+    
+    // Update local state
+    setMatches(prevMatches => 
+      prevMatches.map(match => 
+        match.match_id === matchId 
+          ? { ...match, status: 'cancelled' }
+          : match
+      )
+    );
+
+  } catch (error: any) {
+    console.error('Error al cancelar:', error);
+    toast.error('Error al cancelar la participación');
+  }
+};
 
 
   // Update UI rendering
@@ -268,7 +298,6 @@ const updateMatchStatus = async (match: MyMatch) => {
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
           </div>
           
           {/* Match List */}
@@ -285,6 +314,41 @@ const updateMatchStatus = async (match: MyMatch) => {
               transition={{ duration: 0.5 }}
               className="space-y-4"
             >
+
+              {/* No matches found message */}
+              {filteredMatches.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-8"
+                >
+                  <div className="text-6xl mb-4">⚽️</div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    {activeTab === 'confirmed' 
+                      ? 'Aún no tienes pichangas programadas 😢' 
+                      : '¡No hay pichangas en tu historial!'}
+                  </h3>
+                  <p className="text-gray-500">
+                    {activeTab === 'confirmed' 
+                      ? '¡Únete a una y demuestra tus skills!' 
+                      : searchValue 
+                        ? 'No encontramos pichangas con ese nombre 🔍' 
+                        : '¡Empieza a jugar ahora!'}
+                  </p>
+                  {activeTab === 'confirmed' && (
+                    <button
+                      onClick={() => navigate('/home')}
+                      className="text-white bg-gradient-to-r from-green-500 via-green-600 to-green-700 hover:bg-gradient-to-br focus:ring-5 focus:outline-none focus:ring-green-500 dark:focus:ring-green-800 shadow-lg shadow-green-800/40 dark:shadow-lg dark:shadow-green-800/80 font-bold rounded-lg text-base px-5 py-4 mt-3 text-center"
+                    >
+                      Buscar pichangas
+                    </button>
+                  )}
+                </motion.div>
+              )}
+                
+                
+                {/* Match cards */}
+
               {filteredMatches.map((match, index) => (
                 <motion.div
                   key={match.id}
@@ -332,13 +396,30 @@ const updateMatchStatus = async (match: MyMatch) => {
                       
                     
                     <div className="text-sm text-gray-500 mb-3">
-                      <div>{match.matches.location}</div>
+                      <div className="flex items-center mt-1">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          <span>
+                            {match.matches.location}
+                          </span>
+                        </div>
                       <div className="flex items-center mt-1">
                         <Calendar className="w-4 h-4 mr-1" />
                         <span>
                           {formatMatchDate(match.matches.date, match.matches.time)}
                         </span>
                       </div>
+
+                      {match.matches.google_map_url && (
+                        <a
+                          href={match.matches.google_map_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center mt-2 text-fuchiball-green hover:text-fuchiball-green/80 transition-colors"
+                        >
+                          <MapIcon className="w-4 h-4 mr-1" />
+                          <span className="underline font-semibold">Ver ubicación en Google Maps</span>
+                        </a>
+                      )}
                     </div>
                     
                     {match.status === 'confirmed' && match.code && (

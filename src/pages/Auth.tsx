@@ -21,17 +21,17 @@ const Auth = () => {
             className="flex items-center mb-4"
           >
             <div className="bg-white rounded-xl p-2 mr-3">
-              <span className="text-fuchiball-green font-bold text-2xl">F</span>
+              <span className="text-fuchiball-green font-bold text-2xl">PLV</span>
             </div>
-            <h1 className="text-3xl font-bold">Fuchiball</h1>
+            <h1 className="text-3xl font-bold">PasaLaVoz!</h1>
           </motion.div>
           <motion.p 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-white/90"
+            className="text-white/90 text-center max-w-md mb-4"
           >
-            Juega fútbol sin complicaciones
+            Solo entra, elige un partido, paga y juega. Nosotros nos encargamos de todo lo demás.
           </motion.p>
         </div>
       </div>
