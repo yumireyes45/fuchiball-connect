@@ -21,6 +21,7 @@ interface MatchParticipant {
     date: string;
     time: string;
     level: string;
+    google_map_url: string;
   };
 }
 
@@ -31,7 +32,7 @@ const Confirmation = () => {
   const [participation, setParticipation] = useState<MatchParticipant | null>(null);
   
   useEffect(() => {
-    const createParticipation = async () => {
+    const checkAndCreateParticipation = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
@@ -46,6 +47,44 @@ const Confirmation = () => {
           navigate('/home');
           return;
         }
+
+        // IMPORTANT: First check for existing participation
+        const { data: existingParticipation } = await supabase
+        .from('match_participants')
+        .select(`
+          *,
+          match:matches (
+            title,
+            location,
+            date,
+            time,
+            level,
+            google_map_url
+          )
+        `)
+        .eq('match_id', matchId)
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+        // If we found an existing participation, use it and return early
+        if (existingParticipation) {
+          setParticipation(existingParticipation);
+          setLoading(false);
+          return;
+        }
+
+        // If no existing participation and no creation state, create new
+        if (!location.state?.creating) {
+          navigate('/home');
+          return;
+        }
+
+        // Replace state to remove creating flag after first render
+        window.history.replaceState(
+          { ...location.state, creating: false },
+          '',
+          location.pathname
+        );
 
         // Start a transaction
         const { data: matchCheck, error: matchError } = await supabase
@@ -69,7 +108,7 @@ const Confirmation = () => {
             user_id: session.user.id,
             code,
             status: 'confirmed',
-            joined_at: new Date().toISOString()
+            joined_at: new Date().toISOString(),
           })
           .select(`
             *,
@@ -78,7 +117,8 @@ const Confirmation = () => {
               location,
               date,
               time,
-              level
+              level,
+              google_map_url
             )
           `)
           .single();
@@ -96,7 +136,9 @@ const Confirmation = () => {
         }
 
         setParticipation(participationData);
-        toast.success('¡Inscripción exitosa!');
+        if (location.state?.creating) {
+          toast.success('¡Inscripción exitosa!');
+        }
 
       } catch (error: any) {
         console.error('Error:', error);
@@ -107,8 +149,8 @@ const Confirmation = () => {
       }
     };
 
-    createParticipation();
-  }, [navigate, location.state]);
+    checkAndCreateParticipation();
+  }, [navigate, location.state?.matchId]);
 
   if (loading) return <FootballLoader />;
   if (!participation) return null;
@@ -169,7 +211,22 @@ const Confirmation = () => {
                   <span className="text-gray-600">Lugar</span>
                   <span className="font-medium">{participation.match.location}</span>
                 </div>
-                
+
+                {participation.match.google_map_url && (
+                  <div className="pt-2 border-t border-gray-100">
+                    <a
+                      href={participation.match.google_map_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center text-fuchiball-green hover:text-fuchiball-green/80 transition-colors text-base font-bold"
+                    >
+                      📍 Click aquí para ver la ubicación del mapa
+                    </a>
+                  </div>
+                )}
+
+
+
                 <div className="flex justify-between">
                   <span className="text-gray-600">Nivel</span>
                   <span className="font-medium">{participation.match.level}</span>

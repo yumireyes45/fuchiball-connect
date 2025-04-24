@@ -107,7 +107,7 @@ const MatchCard = ({ match, className }: MatchCardProps) => {
               {isLastMinute && discountPercentage ? (
                 <div className="flex items-center">
                   <span className="text-gray-500 line-through text-sm mr-2">S/{price}</span>
-                  <span className="font-bold text-fuchiball-green text-xl">S/{finalPrice.toFixed(0)}</span>
+                  <span className="font-bold text-fuchiball-green text-xl">S/{finalPrice.toFixed(2)}</span>
                 </div>
               ) : (
                 <span className="font-bold text-fuchiball-green text-xl">S/{price}</span>

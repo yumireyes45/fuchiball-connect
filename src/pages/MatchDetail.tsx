@@ -110,7 +110,8 @@ const MatchDetail = () => {
       navigate('/confirmation', {
         state: {
           matchId: match.id,
-          paymentMethod
+          paymentMethod,
+          creating: true // Add this flag
         },
         replace: true
       });
@@ -241,7 +242,7 @@ const MatchDetail = () => {
                       S/ {match.price}
                     </span>
                     <span className="font-bold text-3xl text-fuchiball-green mr-3">
-                      S/ {(match.price - (match.price * (match.discount_percentage / 100))).toFixed(0)}
+                      S/ {(match.price - (match.price * (match.discount_percentage / 100))).toFixed(2)}
                     </span>
                     <span className="text-fuchiball-gold text-base font-medium block sm:inline">
                       {match.discount_percentage}% de descuento
@@ -383,14 +384,37 @@ const MatchDetail = () => {
               </div>
               
               <div className="border-t border-gray-200 pt-4 mb-4">
-                <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Precio</span>
-                  <span>S/ {match.price.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>S/ {match.price.toFixed(2)}</span>
-                </div>
+              {match.is_last_minute && match.discount_percentage ? (
+                <>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">Precio regular</span>
+                    <span className="line-through text-gray-500">S/ {match.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-fuchiball-gold">Descuento {match.discount_percentage}%</span>
+                    <span className="text-fuchiball-gold">
+                      - S/ {(match.price * (match.discount_percentage / 100)).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span className="text-fuchiball-green">
+                      S/ {(match.price - (match.price * (match.discount_percentage / 100))).toFixed(2)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">Precio</span>
+                    <span>S/ {match.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span>S/ {match.price.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
               </div>
               
               <CustomButton

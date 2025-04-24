@@ -1,4 +1,3 @@
-
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 
@@ -9,23 +8,18 @@ interface AnimatedRouteProps {
 const pageVariants = {
   initial: {
     opacity: 0,
-    x: 100,
   },
   animate: {
     opacity: 1,
-    x: 0,
     transition: {
-      type: 'spring',
-      stiffness: 260,
-      damping: 20,
-      mass: 1,
+      duration: 0.2,
+      ease: 'easeOut'
     },
   },
   exit: {
     opacity: 0,
-    x: -100,
     transition: {
-      duration: 0.3,
+      duration: 0.1,
     },
   },
 };

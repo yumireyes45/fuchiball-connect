@@ -52,10 +52,10 @@ const Navbar = () => {
 
       <div className="container mx-auto px-4 flex justify-between items-center">
         <Link to="/home" className="flex items-center space-x-2">
-          <div className="bg-fuchiball-green rounded-lg p-1">
-            <span className="text-white font-bold text-lg">F</span>
+          <div className="bg-fuchiball-green rounded-lg p-2">
+            <span className="text-white font-bold text-lg">PLV</span>
           </div>
-          <span className="font-bold text-xl text-fuchiball-black">Fuchiball</span>
+          <span className="font-bold text-xl text-fuchiball-black">PasaLaVoz!</span>
         </Link>
 
         {/* Desktop Navigation */}

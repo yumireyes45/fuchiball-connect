@@ -7,7 +7,9 @@ import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
 import { Match } from '@/components/MatchCard/MatchCard';
 
-type EditMatchFormData = Omit<Match, 'id' | 'created_at' | 'created_by' | 'available_spots'>;
+type EditMatchFormData = Omit<Match, 'id' | 'created_at' | 'created_by' | 'available_spots'> & {
+  google_map_url?: string;
+};
 
 const EditMatch = () => {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ const EditMatch = () => {
     location: '',
     date: '',
     time: '',
+    google_map_url: '',
     total_spots: 14,
     price: 15,
     level: 'Básico',
@@ -129,6 +132,20 @@ const EditMatch = () => {
               placeholder="Ej: Cancha Principal - Club XYZ"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">Ubicación en Google Maps</label>
+            <input
+              type="url"
+              value={formData.google_map_url}
+              onChange={(e) => setFormData({ ...formData, google_map_url: e.target.value })}
+              className="premium-input"
+              placeholder="Ej: https://maps.google.com/..."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Pega aquí el enlace de Google Maps de la cancha
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

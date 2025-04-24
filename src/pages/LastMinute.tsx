@@ -19,7 +19,7 @@ const LastMinute = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    
+
     const fetchLastMinuteMatches = async () => {
       try {
         // Get current date and time in Peru timezone
@@ -114,7 +114,7 @@ const LastMinute = () => {
               ) : (
                 <div className="text-center py-12">
                   <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">No hay partidos disponibles</h3>
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No hay pichangas de último minuto</h3>
                   <p className="text-gray-500">Intenta más tarde, los cupos se liberan constantemente</p>
                 </div>
               )}

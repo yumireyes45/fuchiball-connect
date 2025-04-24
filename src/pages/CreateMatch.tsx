@@ -21,6 +21,7 @@ type MatchFormData = {
   includes: string;
   description: string;
   discount_percentage: number;
+  google_map_url: string;
 };
 
 const CreateMatch = () => {
@@ -42,6 +43,7 @@ const CreateMatch = () => {
     includes: '',
     description: '',
     discount_percentage: 0,
+    google_map_url: '',
   });
 
 
@@ -134,6 +136,20 @@ const CreateMatch = () => {
               placeholder="Ej: Cancha Principal - Club XYZ"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">Ubicación en Google Maps</label>
+            <input
+              type="url"
+              value={formData.google_map_url}
+              onChange={(e) => setFormData({ ...formData, google_map_url: e.target.value })}
+              className="premium-input"
+              placeholder="Ej: https://maps.google.com/..."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Pega aquí el enlace de Google Maps de la cancha
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
