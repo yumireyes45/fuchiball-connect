@@ -6,6 +6,8 @@ import { ADMIN_EMAILS } from '@/components/constants/admins';
 import { Check, X, Eye, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import CustomButton from '@/components/ui/custom-button';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface PendingBooking {
   id: string;
@@ -22,6 +24,9 @@ interface PendingBooking {
     date: string;
     time: string;
     price: number;
+    location: string;
+    available_spots: number;
+    level: string;
   };
   profiles: {
     full_name: string;
@@ -48,7 +53,7 @@ const PaymentVerification = () => {
         .from('pending_bookings')
         .select(`
           *,
-          matches:matches!pending_bookings_match_id_fkey (title, date, time, price),
+          matches:matches!pending_bookings_match_id_fkey (title, date, time, price, location, available_spots, level),
           profiles:profile!pending_bookings_profile_fkey (full_name)
         `)
         .eq('status', 'pending')
@@ -70,6 +75,20 @@ const PaymentVerification = () => {
   const handleVerification = async (bookingId: string, matchId: string, userId: string, verified: boolean) => {
     try {
       if (verified) {
+
+        // Verificar si ya existe una participación para este usuario en este partido
+        const { data: existingParticipation, error: participationCheckError } = await supabase
+        .from('match_participants')
+        .select('id')
+        .eq('match_id', matchId)
+        .eq('user_id', userId)
+        .single();
+
+        if (existingParticipation) {
+        toast.error('Este usuario ya está registrado en el partido', { duration: 2000 });
+        return;
+        }
+
         // Actualizar estado del booking
         const { error: bookingError } = await supabase
           .from('pending_bookings')
@@ -155,17 +174,31 @@ const PaymentVerification = () => {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">{booking.matches.title}</h3>
-                    <p className="text-gray-500 text-sm">
-                      Solicitado por: {booking.profiles.full_name}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">S/ {booking.matches.price}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(booking.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
+      <h3 className="font-semibold text-lg mb-1">{booking.matches.title}</h3>
+      <div className="space-y-1 text-sm text-gray-500">
+        <p>
+          📅 {format(parseISO(booking.matches.date), 'EEEE d MMMM', { locale: es })} - {booking.matches.time}
+        </p>
+        <p>
+          📍 {booking.matches.location}
+        </p>
+        <p>
+          👥 {booking.matches.available_spots} cupos disponibles
+        </p>
+        <p>
+          ⚽️ Nivel: {booking.matches.level}
+        </p>
+        <p className="mt-2">
+          👤 Solicitado por: <span className="font-medium">{booking.profiles.full_name}</span>
+        </p>
+      </div>
+    </div>
+    <div className="text-right">
+      <p className="font-semibold">S/ {booking.matches.price}</p>
+      <p className="text-sm text-gray-500">
+      Solicitud: {format(parseISO(booking.created_at), 'dd/MM/yyyy HH:mm')}
+      </p>
+    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">

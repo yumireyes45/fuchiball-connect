@@ -1,18 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navigation/Navbar';
 import BottomNav from '@/components/Navigation/BottomNav';
-import { Calendar, MapIcon, MapPin, Search } from 'lucide-react';
+import { Calendar, MapIcon, MapPin, Search, X } from 'lucide-react';
 import AnimatedRoute from '@/components/ui/AnimatedRoute';
 import { cn } from '@/lib/utils';
 import FootballLoader from '@/components/ui/FootballLoader';
 import { format, parseISO, isAfter } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
+import { Eye } from 'lucide-react';
 
 interface MyMatch {
   id: string;
@@ -34,12 +35,15 @@ interface MyMatch {
 
 const TIMEZONE = 'America/Lima';
 
+
 const MyMatches = () => {
   const navigate = useNavigate();
   const [matches, setMatches] = useState<MyMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'confirmed' | 'completed'>('confirmed');
   const [searchValue, setSearchValue] = useState('');
+  const [selectedMatch, setSelectedMatch] = useState<MyMatch | null>(null);
+
 
   const fetchUserMatches = async () => {
     try {
@@ -212,6 +216,16 @@ const handleCancelMatch = async (matchId: string) => {
       className: 'bg-green-100 text-green-800'
     };
   };
+
+  // Reemplazar handleMatchClick con esta nueva versión
+const handleMatchClick = (match: MyMatch) => {
+  navigate('/confirmation', {
+    state: {
+      matchId: match.match_id,
+      // No necesitamos creating: true aquí porque estamos viendo un partido existente
+    }
+  });
+};
 
 
   const isMatchUpcoming = (match: MyMatch) => {
@@ -421,6 +435,17 @@ const handleCancelMatch = async (matchId: string) => {
                         </a>
                       )}
                     </div>
+
+                    {/* Añade este botón después del código */}
+                    <div className="flex justify-end mt-3 mb-2">
+                      <button
+                        onClick={() => handleMatchClick(match)}
+                        className="flex items-center text-fuchiball-green hover:text-fuchiball-green/80 transition-colors text-sm font-semibold"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Ver detalles
+                      </button>
+                    </div>
                     
                     {match.status === 'confirmed' && match.code && (
                       <div className="bg-gray-50 p-2 rounded border border-gray-200 text-sm mb-3">
@@ -428,6 +453,7 @@ const handleCancelMatch = async (matchId: string) => {
                         <span className="font-mono font-medium">{match.code}</span>
                       </div>
                     )}
+                    
 
                     {/* Add the cancel button here */}
                     {isMatchUpcoming(match) && match.status === 'confirmed' && (
@@ -445,6 +471,8 @@ const handleCancelMatch = async (matchId: string) => {
                       </button>
                     </div>
                     )}
+
+                    
 
                   </div>
                 </motion.div>

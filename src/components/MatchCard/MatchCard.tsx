@@ -2,7 +2,10 @@
 import { MapPin, Users, Clock, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { formatInTimeZone } from 'date-fns-tz';
+import { es } from 'date-fns/locale';
 
+const TIMEZONE = 'America/Lima';
 
 export interface Match {
   id: string;
@@ -64,6 +67,15 @@ const MatchCard = ({ match, className }: MatchCardProps) => {
     }
   };
 
+  const formatMatchDate = (date: string, time: string) => {
+    return formatInTimeZone(
+      `${date}T${time}`, 
+      TIMEZONE,
+      "d 'de' MMMM 'a las' h:mm a",
+      { locale: es }
+    );
+  };
+
   // Calculate availability percentage
   const availabilityPercentage = (availableSpots / totalSpots) * 100;
 
@@ -91,7 +103,7 @@ const MatchCard = ({ match, className }: MatchCardProps) => {
             
             <div className="flex items-center text-sm text-gray-600">
               <Clock className="w-4 h-4 mr-2 flex-shrink-0 text-fuchiball-green" />
-              <span>{date} • {time}</span>
+              <span>{formatMatchDate(date, time)}</span>
             </div>
             
             <div className="flex items-center text-sm text-gray-600">
