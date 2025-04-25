@@ -32,6 +32,11 @@ const MatchDetail = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAlreadyJoined, setIsAlreadyJoined] = useState(false);
 
+  const [yapePhone, setYapePhone] = useState('');
+  const [yapeName, setYapeName] = useState('');
+  const [yapeCode, setYapeCode] = useState('');
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+
   useEffect(() => {
     const fetchMatchDetails = async () => {
       try {
@@ -90,6 +95,16 @@ const MatchDetail = () => {
       toast.error('Por favor selecciona un método de pago', { duration: 1000 });
       return;
     }
+
+    if (paymentMethod !== 'yape') {
+      toast.error('Por el momento solo aceptamos Yape', { duration: 1000 });
+      return;
+    }
+
+    if (!yapePhone || !yapeName || !yapeCode) {
+      toast.error('Por favor completa todos los campos requeridos', { duration: 1000 });
+      return;
+    }
   
     if (!match || isProcessing) {
       return;
@@ -106,6 +121,50 @@ const MatchDetail = () => {
         navigate('/auth');
         return;
       }
+
+      // Subir comprobante si existe
+      let paymentProofUrl = null;
+
+      if (paymentProof) {
+        try {
+          // Subir la imagen al bucket payment_proofs
+          const { data: fileData, error: fileError } = await supabase.storage
+            .from('payment_proofs')
+            .upload(
+              `${session.user.id}/${match.id}/${Date.now()}-${paymentProof.name}`, 
+              paymentProof,
+              { cacheControl: '3600' }
+            );
+      
+          if (fileError) throw fileError;
+      
+          // Obtener la URL pública del archivo
+          const { data: publicUrl } = supabase.storage
+            .from('payment_proofs')
+            .getPublicUrl(fileData.path);
+      
+          paymentProofUrl = publicUrl.publicUrl;
+        } catch (error) {
+          console.error('Error uploading payment proof:', error);
+          toast.error('Error al subir el comprobante');
+          return;
+        }
+      }
+
+      // Crear el pending booking con la URL del comprobante
+      const { error: bookingError } = await supabase
+      .from('pending_bookings')
+      .insert({
+        match_id: match.id,
+        user_id: session.user.id,
+        yape_phone: yapePhone,
+        yape_name: yapeName,
+        yape_code: yapeCode,
+        payment_proof_url: paymentProofUrl,
+        status: 'pending'
+      });
+
+      if (bookingError) throw bookingError;
   
       // Check available spots
       if (match.available_spots < 1) {
@@ -113,29 +172,15 @@ const MatchDetail = () => {
         return;
       }
   
-      // Show loading toast
-      toast.loading('Procesando pago...');
-  
-      // Simulate payment processing (replace with real payment integration)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-  
-      // Navigate to confirmation with match ID
-      navigate('/confirmation', {
-        state: {
-          matchId: match.id,
-          paymentMethod,
-          creating: true // Add this flag
-        },
-        replace: true
-      });
-  
+      toast.success('Pago registrado y en revisión');
+        navigate('/my-matches');
+
     } catch (error: any) {
-      toast.error('Error al procesar el pago');
+      toast.error('Error al procesar el registro');
       console.error('Payment error:', error);
-    } finally {
-      setIsProcessing(false);
-      toast.dismiss();
-    }
+      } finally {
+        setIsProcessing(false);
+        }
   };
 
   if (loading) {
@@ -313,22 +358,30 @@ const MatchDetail = () => {
         
         {/* Payment Modal */}
         {showPaymentOptions && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center sm:items-center p-4">
+          <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
+          onClick={() => setShowPaymentOptions(false)}>
+
+          {/* Centering container */}
+            <div className="flex items-center justify-center min-h-screen p-4">
+            {/* motion.div */}
             <motion.div
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
-              className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-6"
+              className="relative bg-white w-full max-w-md rounded-2xl p-6
+                          overflow-y-auto max-h-auto mx-auto"
+                          onClick={(e) => e.stopPropagation()}         // ② evita cerrar al clicar dentro
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">Selecciona método de pago</h2>
-                <button 
-                  onClick={() => setShowPaymentOptions(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <ChevronDown className="w-6 h-6" />
-                </button>
-              </div>
+              {/* Close button - fixed at top */}
+              <button 
+                onClick={() => setShowPaymentOptions(false)}
+                className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+              >
+                <ChevronDown className="w-6 h-6" />
+              </button>
+
+              {/* Title with padding for close button */}
+              <h2 className="text-xl font-bold mb-6 pr-8">Selecciona método de pago</h2>
               
               <div className="space-y-3 mb-6">
                 <button
@@ -340,16 +393,84 @@ const MatchDetail = () => {
                       : "border-gray-200"
                   )}
                 >
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
-                    <CircleDollarSign className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-grow">
-                    <div className="font-medium">Yape</div>
-                    <div className="text-sm text-gray-500">Pago rápido con QR</div>
-                  </div>
+
+
+                  {paymentMethod !== 'yape' && (
+                    <div className="flex items-center w-full">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                        <CircleDollarSign className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div className="flex-grow text-center">
+                        <div className="font-medium">Yape</div>
+                        <div className="text-sm text-gray-500">Pago rápido con QR</div>
+                      </div>
+                    </div>
+                  )}
+
+
+                  {/* Dentro del Payment Modal */}
                   {paymentMethod === 'yape' && (
-                    <div className="w-5 h-5 rounded-full bg-fuchiball-green text-white flex items-center justify-center">
-                      ✓
+                    <div className="space-y-4 mt-2">
+                      <div className="bg-purple-50 p-4 rounded-lg text-center space-y-3">
+                      <h3 className="font-bold text-purple-700 text-lg">¡Paga con QR en 3 pasos!</h3>
+                        <ol className="list-decimal list-inside text-left text-purple-800 font-medium space-y-1">
+                          <li>Abre Yape 📱</li>
+                          <li>Clic en "Escanear QR"</li>
+                          <li>Abajo haz clic en “Subir una imagen con QR” 📷 y comparte tu comprobante</li>
+                        </ol>
+                        <img 
+                          src="https://ytsvrhcubfdotvaomypr.supabase.co/storage/v1/object/sign/imagenes/WhatsApp%20Image%202025-04-24%20at%2012.49.00%20PM.webp?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzViMmEzZmMzLWVmOGEtNGZlYS04NDMzLTY4ZTQzYTU5ZTM2OSJ9.eyJ1cmwiOiJpbWFnZW5lcy9XaGF0c0FwcCBJbWFnZSAyMDI1LTA0LTI0IGF0IDEyLjQ5LjAwIFBNLndlYnAiLCJpYXQiOjE3NDU1MzQ4MTMsImV4cCI6MTc3NzA3MDgxM30.aR7cJwvIZkWWpeP2ICUt80dFCDlZ_eCshonbr-nyvw4" 
+                          alt="QR Code" 
+                          className="w-45 h-55 mx-auto"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Número de Yape</label>
+                        <input
+                          type="tel"
+                          maxLength={9}
+                          className="w-full p-3 border rounded-lg"
+                          value={yapePhone}
+                          onChange={(e) => setYapePhone(e.target.value)}
+                          placeholder="Ej: 999999999"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Nombre en Yape</label>
+                        <input
+                          type="text"
+                          className="w-full p-3 border rounded-lg"
+                          value={yapeName}
+                          onChange={(e) => setYapeName(e.target.value)}
+                          placeholder="Nombre completo"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Código de seguridad Yape</label>
+                        <input
+                          type="text"
+                          maxLength={3}
+                          className="w-full p-3 border rounded-lg"
+                          value={yapeCode}
+                          onChange={(e) => setYapeCode(e.target.value)}
+                          placeholder="Código de 3 dígitos"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Comprobante (opcional)
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="w-full p-3 border rounded-lg"
+                          onChange={(e) => setPaymentProof(e.target.files?.[0] || null)}
+                        />
+                      </div>
                     </div>
                   )}
                 </button>
@@ -444,6 +565,7 @@ const MatchDetail = () => {
                 {isProcessing ? 'Procesando...' : 'Pagar ahora'}
               </CustomButton>
             </motion.div>
+          </div>
           </div>
         )}
       </div>

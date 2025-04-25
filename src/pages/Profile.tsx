@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Edit2, Shield, CreditCard, Bell, HelpCircle } from 'lucide-react';
+import { User, LogOut, Edit2, Shield, CreditCard, Bell, HelpCircle, MessageCircle  } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
 import Navbar from '@/components/Navigation/Navbar';
@@ -14,7 +14,6 @@ import FootballLoader from '@/components/ui/FootballLoader';
 type Profile = {
   id: string;
   full_name: string;
-  email: string;
   phone: string | null;
   skill_level: 'Básico' | 'Intermedio' | 'Avanzado';
   favorite_position: 'Portero' | 'Defensa' | 'Mediocampista' | 'Delantero';
@@ -29,34 +28,58 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('info');
 
   // Obtener datos del perfil
+  // Actualizar todas las referencias a la tabla 'profile' a 'profiles'
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !session) {
-        toast.error('Sesión no válida', { duration: 2000 });
-        navigate('/login');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('profile')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-        if (error) {
-          toast.error('Error al cargar perfil', { duration: 2000 });
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+        if (sessionError || !session) {
+          toast.error('Sesión no válida');
+          navigate('/login');
           return;
         }
-
-      setProfile({
-        ...data,
-        email: session.user.email as string
-      });
-      setLoading(false);
+  
+        // Cambiar 'profile' a 'profiles'
+        const { data, error } = await supabase
+          .from('profile')  // Cambiado aquí
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+  
+        if (error) {
+          // Si no existe el perfil, lo creamos
+          const newProfile: Profile = {
+            id: session.user.id,
+            full_name: session.user.user_metadata?.full_name || '',
+            phone: null,
+            skill_level: 'Básico', // Explicitly typed to match the union type
+            favorite_position: 'Delantero',
+            profile_image: session.user.user_metadata?.avatar_url || null
+          };
+  
+          const { error: insertError } = await supabase
+            .from('profile')  // Cambiado aquí
+            .insert([newProfile]);
+  
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+            toast.error('Error al crear perfil');
+            return;
+          }
+  
+          setProfile(newProfile);
+        } else {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        toast.error('Error al cargar perfil');
+      } finally {
+        setLoading(false);
+      }
     };
-
+  
     fetchProfile();
   }, [navigate]);
 
@@ -73,28 +96,29 @@ const Profile = () => {
   const handleSaveChanges = async () => {
     if (!profile) return;
     
-    setSaving(true);
-    const { error } = await supabase
-      .from('profile')
-      .update({
-        full_name: profile.full_name,
-        phone: profile.phone,
-        skill_level: profile.skill_level || 'Básico',
-        favorite_position: profile.favorite_position || 'Delantero'
-      })
-      .eq('id', profile.id);
-
-    setSaving(false);
-    
-    if (error) {
-      toast.error('Error al actualizar perfil', { duration: 1000 });
-      return;
-    }
-
-    toast.success('Perfil actualizado correctamente', { duration: 1000 });
+    try {
+      const { error } = await supabase
+        .from('profile')  // Cambiado aquí
+        .update({
+          full_name: profile.full_name,
+          phone: profile.phone,
+          skill_level: profile.skill_level || 'Básico',
+          favorite_position: profile.favorite_position || 'Delantero'
+        })
+        .eq('id', profile.id);
+  
+      if (error) throw error;
+  
+      toast.success('Perfil actualizado correctamente');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al actualizar perfil');
+    } finally {
+      setSaving(false);
+    } 
   };
 
-  const isProfileComplete = profile?.phone;
+  const isProfileComplete = profile?.phone && profile.phone.length === 9;
 
   if (loading) {
     return (
@@ -142,15 +166,17 @@ const Profile = () => {
                 </button>
               </div>
               
-              <div className="ml-4">
+                <div className="ml-4 flex-1">
                 <h2 className="text-xl font-bold">{profile?.full_name}</h2>
-                <p className="text-gray-500">{profile?.email}</p>
                 {!isProfileComplete && (
-                  <span className="text-red-500 text-sm">
-                    Completa tu perfil para acceder a todas las funciones
+                  <div className="flex items-start bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-2" role="alert">
+                  <MessageCircle className="mr-2 flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6" />
+                  <span className="text-sm font-medium">
+                    Confirmaremos tus pagos vía WhatsApp al número ingresado. Por favor, completa tu número de teléfono.
                   </span>
+                  </div>
                 )}
-              </div>
+                </div>
             </div>
           </div>
 
@@ -172,15 +198,6 @@ const Profile = () => {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-gray-500 text-sm mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    className="premium-input" 
-                    value={profile?.email || ''} 
-                    disabled 
-                  />
-                </div>
                 
                 <div>
                   <label className="block text-gray-500 text-sm mb-1">

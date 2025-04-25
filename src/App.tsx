@@ -22,6 +22,8 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import EditMatch from '@/pages/EditMatch'; // Ajusta si está en otra carpeta
 import OAuthCallback from '@/components/Auth/OAuthCallback';
 import { AuthProvider } from '@/components/Auth/AuthProvider';
+import PaymentVerification from "./pages/PaymentVerification";
+
 
 
 const queryClient = new QueryClient();
@@ -47,6 +49,7 @@ const App = () => (
               <Route path="/admin/crear-partido" element={<CreateMatch />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/editar-partido/:id" element={<EditMatch />} />
+              <Route path="/admin/payment-verification" element={<PaymentVerification />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AnimatePresence>
